@@ -61,7 +61,7 @@ public class UserController {
 
         User savedUser = userRepository.save(user);
 
-        System.out.println("Application user was created successfully");
+        System.out.println("Application user was created successfully...");
 
         return ResponseEntity.ok(userService.fromEntityToDto(savedUser));
     }
