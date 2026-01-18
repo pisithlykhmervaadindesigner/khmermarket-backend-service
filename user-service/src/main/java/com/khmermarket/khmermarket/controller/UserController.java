@@ -36,7 +36,7 @@ public class UserController {
 
     @PostMapping("/")
     public ResponseEntity<?> createUser(@Valid @RequestBody CreateUserRequest request) {
-        // Check if username already exists
+        // Check if a username already exists
         if (userRepository.existsByUsername(request.getUsername())) {
             return ResponseEntity
                     .badRequest()
