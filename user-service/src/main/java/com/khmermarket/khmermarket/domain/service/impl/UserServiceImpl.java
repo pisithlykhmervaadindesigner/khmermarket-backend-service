@@ -33,7 +33,8 @@ public class UserServiceImpl implements UserService {
         return fromEntityToDto(user);
     }
 
-    private UserDto fromEntityToDto(User user){
+    @Override
+    public UserDto fromEntityToDto(User user){
         UserDto dto = new UserDto();
         dto.setId(user.getId());
         dto.setUsername(user.getUsername());

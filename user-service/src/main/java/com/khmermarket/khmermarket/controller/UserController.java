@@ -1,20 +1,27 @@
 package com.khmermarket.khmermarket.controller;
 
 import com.khmermarket.khmermarket.domain.dto.UserDto;
+import com.khmermarket.khmermarket.domain.entity.User;
+import com.khmermarket.khmermarket.domain.repository.UserRepository;
+import com.khmermarket.khmermarket.domain.request.CreateUserRequest;
 import com.khmermarket.khmermarket.domain.service.UserService;
+import com.khmermarket.khmermarket.enumerate.UserStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.UUID;
 
 @RestController
@@ -24,6 +31,38 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @PostMapping("/")
+    public ResponseEntity<?> createUser(@Valid @RequestBody CreateUserRequest request) {
+        // Check if username already exists
+        if (userRepository.existsByUsername(request.getUsername())) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new RuntimeException("Error: Username is already taken!"));
+        }
+
+        // Check if email already exists
+        if (userRepository.existsByEmail(request.getEmail())) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new RuntimeException("Error: Email is already in use!"));
+        }
+
+        // Create a new user
+        User user = User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .phoneNumber(request.getPhoneNumber())
+                .status(UserStatus.ACTIVE)
+                .build();
+
+        User savedUser = userRepository.save(user);
+
+        return ResponseEntity.ok(userService.fromEntityToDto(savedUser));
+    }
 
     @GetMapping
     @Operation(
@@ -56,7 +95,7 @@ public class UserController {
         content = @Content
     )
     public ResponseEntity<UserDto> getUserById(
-            @Parameter(description = "ID of the user to be retrieved") 
+            @Parameter(description = "ID of the user to be retrieved")
             @PathVariable UUID id) {
         return ResponseEntity.ok(userService.findById(id));
     }
@@ -93,7 +132,7 @@ public class UserController {
         content = @Content
     )
     public ResponseEntity<Void> deleteUser(
-            @Parameter(description = "ID of the user to be deleted") 
+            @Parameter(description = "ID of the user to be deleted")
             @PathVariable UUID id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
